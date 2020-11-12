@@ -1,0 +1,3 @@
+- BUAT DATABASE vuejs
+- EXPORT note.sql
+- RUNNING PROGRAM

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>To do list</title>
+	<link rel="stylesheet" href="assets/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="assets/css/style.css">
+
+</head>
+<body>
+
+<div id="app">
+	<div class="container">
+		<div class="form">
+			<form>
+				<div class="form-group">
+					<label>To Do</label>
+					<input type="text" v-model="nama" class="form-control">
+				</div>
+				<div class="form-group">
+					<label>Prioritas</label>
+					<select class="form-control" v-model="prioritas">
+						<option value="">Prioritas</option>
+						<option v-for='(value, index) in list_prioritas' :value="value.kode">{{ value.urai }}</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Catatan</label>
+					<textarea class="form-control" rows="4" v-model="catatan"></textarea>
+				</div>
+				<button type="reset" @click='resetData();' class="btn btn-danger">
+					Reset
+				</button>
+				<button type="button" class="btn btn-primary" v-show="!updateSubmit" @click='addRecord();'>
+					Simpan
+				</button>
+				<button type="button" class="btn btn-primary" v-show="updateSubmit" @click='updateRecord();'>
+					Simpan Perubahan
+				</button>
+			</form>
+		</div>
+		
+		<div class="row" style="margin-top: 3rem;">
+			<div class="col-md-12">
+				<table class="table table-bordered">
+					<thead>
+						<tr>
+							<th>No</th>
+							<th>To Do</th>
+							<th>Prioritas</th>
+							<th>Catatan</th>
+							<th>Opsi</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-if='list.length' v-for='(value, index) in list'>
+							<td v-html='index+1'></td>
+							<td v-html='value.todo'></td>
+							<td v-html='value.prioritas'></td>
+							<td v-html='value.catatan'></td>
+							<td>
+								<button type="button" class="btn btn-xs btn-primary" @click='editRecord(index,{
+									id: value.id,
+									todo: value.todo,
+									prioritas: value.idprioritas,
+									catatan: value.catatan
+								});'>Ubah</button>
+								<button type="button" class="btn btn-xs btn-danger" @click='deleteRecord(index,value.id)'>Hapus</button>
+							</td>
+						</tr>
+						<tr v-if='list.length === 0'>
+							<td colspan="5">Tidak ada data</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div class="footer" style="margin-top: 10rem;">
+			<div class="row">
+				<div class="col-md-12 text-center">
+					NAMA : Bram | NPM : 0118 | Kelas D
+				</div>
+			</div>
+		</div>
+	</div>
+	
+</div>
+</body>
+
+<script src="assets/js/vue.min.js"></script>
+<script src="assets/js/axios.min.js"></script>
+
+<script>
+	var app = new Vue({
+		el: '#app',
+		data: {
+			list: false,
+			nama: '',
+			prioritas: '',
+			catatan: '',
+			idnote: '',
+			updateSubmit: false,
+			list_prioritas: [
+				{ kode: 1, urai: "Penting" },
+				{ kode: 2, urai: "Biasa" },
+				{ kode: 3, urai: "Tidak Penting" },
+			]
+		},
+		methods: {
+			showList: function () {
+				axios.get('proses.php?act=list').then(function(response) {
+					app.list = response.data;
+				})
+			},
+			addRecord: function () {
+				if (this.nama !== '' && this.prioritas !== '' && this.catatan !== '') {
+					
+					axios.post('proses.php?act=simpan', {
+						nama: this.nama,
+						prioritas: this.prioritas,
+						catatan: this.catatan
+					}).then(function(response) {
+
+						if (response.data === 1) {
+							
+							app.showList();
+
+							app.nama = '';
+							app.prioritas = '';
+							app.catatan = '';
+							app.updateSubmit = false;
+
+							setTimeout(function() {
+								alert("Tambah data berhasil!");
+							}, 800);
+
+						} else {
+
+							alert("Ada kesalahan!");
+
+						}
+
+					}).catch(function(error) {
+						console.log(error);
+					})
+
+				} else {
+					alert("Silahkan lengkapi data!");
+					return false;
+				}
+			},
+			editRecord: function (index,value) {
+				app.nama = value.todo;
+				app.prioritas = value.prioritas;
+				app.catatan = value.catatan;
+				app.idnote = value.id
+				app.updateSubmit = true;
+			},
+			updateRecord: function () {
+				if (this.nama !== '' && this.prioritas !== '' && this.catatan !== '') {
+					axios.post('proses.php?act=update', {
+						id: this.idnote,
+						nama: this.nama,
+						prioritas: this.prioritas,
+						catatan: this.catatan
+					}).then(function(response) {
+
+						if (response.data === 1) {
+							
+							app.showList();
+
+							app.updateSubmit = false
+							app.nama = '';
+							app.prioritas = '';
+							app.catatan = '';
+
+							setTimeout(function() {
+								alert("Update data berhasil!");
+							}, 800);
+
+						} else {
+
+							alert("Ada kesalahan!");
+
+						}
+
+					}).catch(function(error) {
+						console.log(error);
+					})
+
+				} else {
+					alert("Silahkan lengkapi data!");
+					return false;
+				}
+			},
+			deleteRecord: function (index, id) {
+				var konfirmasi = confirm("Anda yakin akan menghapus data ini?");
+				if (konfirmasi) {
+					axios.post("proses.php?act=hapus", {
+						id: id
+					}).then(function(response) {
+						app.showList();
+						app.updateSubmit = false;
+
+						setTimeout(function() {
+							alert("Hapus data berhasil!");
+						}, 800);
+					})
+				};
+			},
+			resetData: function() {
+				app.updateSubmit = false;
+				app.id = '';
+				app.nama = '';
+				app.prioritas = '';
+				app.catatan = '';
+			}
+		},
+		created: function () {
+			this.showList();
+		}
+	})
+</script>
+</html>
